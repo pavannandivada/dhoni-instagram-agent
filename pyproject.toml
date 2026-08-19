@@ -15,6 +15,10 @@ dependencies = [
   "pydantic-settings>=2.7,<3",
 ]
 
+[project.scripts]
+dhoni-migrate = "dhoni_instagram_agent.migrate:main"
+dhoni-healthcheck = "dhoni_instagram_agent.healthcheck:main"
+
 [project.optional-dependencies]
 dev = [
   "mypy>=1.14",
