@@ -1,17 +1,24 @@
 from __future__ import annotations
 
 import json
+from enum import StrEnum
 from typing import Any
 
 import psycopg
 
-from dhoni_instagram_agent.ingestion.hashing import content_hash
+
+class PersistenceAction(StrEnum):
+    INSERTED = "INSERTED"
+    UPDATED = "UPDATED"
+    SKIPPED = "SKIPPED"
 
 
 def upsert_knowledge_document(
     connection: psycopg.Connection[Any],
     record: dict[str, Any],
-) -> tuple[str, bool]:
+) -> tuple[str, PersistenceAction]:
+    from dhoni_instagram_agent.ingestion.hashing import content_hash
+
     payload_hash = content_hash(record["normalized_payload"])
 
     with connection.cursor() as cursor:
@@ -32,7 +39,7 @@ def upsert_knowledge_document(
         existing = cursor.fetchone()
 
         if existing and existing[1] == payload_hash:
-            return str(existing[0]), False
+            return str(existing[0]), PersistenceAction.SKIPPED
 
         if existing:
             cursor.execute(
@@ -64,7 +71,12 @@ def upsert_knowledge_document(
                     existing[0],
                 ),
             )
-            return str(cursor.fetchone()[0]), True
+
+            row = cursor.fetchone()
+            if row is None:
+                raise RuntimeError("Knowledge document update did not return an ID.")
+
+            return str(row[0]), PersistenceAction.UPDATED
 
         cursor.execute(
             """
@@ -104,7 +116,11 @@ def upsert_knowledge_document(
             ),
         )
 
-        return str(cursor.fetchone()[0]), True
+        row = cursor.fetchone()
+        if row is None:
+            raise RuntimeError("Knowledge document insert did not return an ID.")
+
+        return str(row[0]), PersistenceAction.INSERTED
 
 
 def upsert_quote(

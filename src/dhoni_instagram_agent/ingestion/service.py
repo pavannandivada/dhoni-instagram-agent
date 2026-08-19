@@ -12,6 +12,7 @@ from dhoni_instagram_agent.ingestion.normalizers import (
     normalize_quote,
 )
 from dhoni_instagram_agent.ingestion.repository import (
+    PersistenceAction,
     upsert_asset,
     upsert_event,
     upsert_fact,
@@ -71,13 +72,24 @@ def ingest_batch(
 
             normalized["source_system"] = source_system
 
-            knowledge_id, changed = upsert_knowledge_document(
+            knowledge_id, action = upsert_knowledge_document(
                 connection,
                 normalized,
             )
 
-            if not changed:
+            if action is PersistenceAction.SKIPPED:
                 skipped += 1
+                write_audit_event(
+                    connection,
+                    "KNOWLEDGE_SKIPPED",
+                    knowledge_id,
+                    {
+                        "source_system": source_system,
+                        "source_collection": source_collection,
+                        "source_record_id": normalized["source_record_id"],
+                        "row_number": row_number,
+                    },
+                )
                 continue
 
             upsert_domain(
@@ -86,9 +98,16 @@ def ingest_batch(
                 knowledge_id,
             )
 
+            if action is PersistenceAction.INSERTED:
+                inserted += 1
+                audit_type = "KNOWLEDGE_INSERTED"
+            else:
+                updated += 1
+                audit_type = "KNOWLEDGE_UPDATED"
+
             write_audit_event(
                 connection,
-                "KNOWLEDGE_INGESTED",
+                audit_type,
                 knowledge_id,
                 {
                     "source_system": source_system,
@@ -97,11 +116,6 @@ def ingest_batch(
                     "row_number": row_number,
                 },
             )
-
-            if normalized["source_record_id"].startswith("row-"):
-                updated += 1
-            else:
-                inserted += 1
 
         connection.commit()
 
