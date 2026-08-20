@@ -5,6 +5,8 @@ from fastapi import FastAPI, HTTPException
 from dhoni_instagram_agent.api.models import (
     EmbeddingIndexRequest,
     IngestionBatch,
+    RagCriticRequest,
+    RagGenerateRequest,
     RetrievalRequest,
 )
 from dhoni_instagram_agent.config import Settings
@@ -13,10 +15,12 @@ from dhoni_instagram_agent.embeddings.service import (
     search,
 )
 from dhoni_instagram_agent.ingestion.service import ingest_batch
+from dhoni_instagram_agent.rag.critic import GroundingCritic
+from dhoni_instagram_agent.rag.generator import GroundedGenerator
 
 app = FastAPI(
     title="Dhoni Instagram Agent",
-    version="0.2.0",
+    version="0.3.0",
 )
 
 
@@ -76,4 +80,47 @@ def retrieval_search(
         raise HTTPException(
             status_code=500,
             detail=f"Retrieval failed: {error}",
+        ) from error
+
+
+@app.post("/v1/rag/generate")
+def generate_rag(
+    request: RagGenerateRequest,
+) -> dict[str, object]:
+    try:
+        result = GroundedGenerator(Settings()).generate(
+            request=request.request,
+            top_k=request.top_k,
+        )
+
+        return result.model_dump()
+
+    except Exception as error:
+        raise HTTPException(
+            status_code=500,
+            detail=f"RAG generation failed: {error}",
+        ) from error
+
+
+@app.post("/v1/rag/critic")
+def critic(
+    request: RagCriticRequest,
+) -> dict[str, object]:
+    try:
+        evidence = [
+            item.model_dump()
+            for item in request.evidence
+        ]
+
+        result = GroundingCritic(Settings()).evaluate(
+            caption=request.caption,
+            evidence=evidence,
+        )
+
+        return result.model_dump()
+
+    except Exception as error:
+        raise HTTPException(
+            status_code=500,
+            detail=f"RAG critic failed: {error}",
         ) from error
