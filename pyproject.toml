@@ -11,9 +11,15 @@ requires-python = ">=3.12"
 license = { file = "LICENSE" }
 authors = [{ name = "pavannandivada" }]
 dependencies = [
+  "fastapi>=0.116,<1",
   "psycopg[binary]>=3.2,<4",
   "pydantic-settings>=2.7,<3",
+  "uvicorn[standard]>=0.35,<1",
 ]
+[project.scripts]
+dhoni-migrate = "dhoni_instagram_agent.migrate:main"
+dhoni-healthcheck = "dhoni_instagram_agent.healthcheck:main"
+dhoni-api = "dhoni_instagram_agent.api.run:main"
 
 [project.optional-dependencies]
 dev = [
