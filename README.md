@@ -2,9 +2,9 @@
 
 A self-hosted, production-oriented agentic AI platform for an MS Dhoni fan account.
 
-The project ingests structured knowledge, generates embeddings, performs semantic retrieval, creates grounded Instagram captions, validates them with a critic, and routes LLM requests across multiple providers with a local Ollama fallback.
+The project ingests structured knowledge, generates embeddings, performs semantic retrieval, creates grounded Instagram captions from verified evidence, and routes LLM requests across multiple providers with a local Ollama fallback.
 
-> **Project status:** Phase 3 — grounded generation and multi-provider LLM routing.
+> **Project status:** Phase 3 — grounded generation, verification gates, multi-provider LLM routing, and Content Calendar foundations.
 
 ## Current capabilities
 
@@ -13,16 +13,18 @@ The project ingests structured knowledge, generates embeddings, performs semanti
 - pgvector semantic embeddings and retrieval.
 - Gemini embeddings.
 - Grounded caption generation using verified evidence only.
-- Critic + revision loop.
 - Multi-provider LLM routing:
   - Gemini
   - OpenAI
   - Anthropic
   - Ollama (last-resort local fallback)
 - Provider retry and fallback handling.
+- Deterministic caption sanity checks.
+- Human-review-first publishing flow.
+- Content Calendar CRUD API with `PENDING_REVIEW` and `APPROVED` states.
+- Standalone critic endpoint for future experiments and provider-specific evaluation.
 - Separate test database for integration tests.
 - Audit events for ingestion operations.
-- API endpoints for ingestion, indexing, retrieval, generation, and critic validation.
 
 ## Non-negotiable guardrails
 
@@ -59,27 +61,47 @@ flowchart TD
     Router --> Ollama[Ollama fallback]
 
     Router --> Writer[Caption writer]
-    Writer --> Critic[Grounding critic]
-
-    Critic -->|REVISE| Writer
-    Critic -->|PASS| HITL[Human approval]
-
+    Writer --> Sanity[Deterministic caption checks]
+    Sanity --> HITL[Human approval]
     HITL --> Calendar[Content Calendar]
     Calendar --> Meta[Instagram / Meta API]
     Meta --> Audit[Audit trail]
+
+    OptionalCritic[Optional standalone critic] -.-> Writer
 ```
+
+### Why the automatic critic is not in the main generation path
+
+A writer-plus-critic loop can consume multiple LLM requests for one post. It can also cause a second model to incorrectly reject a caption that is actually supported by the verified evidence.
+
+The main path therefore uses:
+
+```text
+Verified evidence
+    ↓
+One LLM generation path
+    ↓
+Deterministic sanity checks
+    ↓
+Human approval
+```
+
+The critic remains available as a standalone API for future evaluation, experiments, and provider-specific review strategies.
 
 The baseline and target design are documented in [docs/architecture.md](docs/architecture.md). The roadmap is in [docs/implementation-plan.md](docs/implementation-plan.md).
 
 ## Current API
 
 ```text
-GET  /health
-POST /v1/ingestion/batch
-POST /v1/embeddings/index
-POST /v1/retrieval/search
-POST /v1/rag/generate
-POST /v1/rag/critic
+GET    /health
+POST   /v1/ingestion/batch
+POST   /v1/embeddings/index
+POST   /v1/retrieval/search
+POST   /v1/rag/generate
+POST   /v1/rag/critic
+POST   /v1/content-calendar
+GET    /v1/content-calendar
+PATCH  /v1/content-calendar/{post_id}
 ```
 
 ## Example RAG flow
@@ -95,11 +117,13 @@ LLM Router
     ↓
 Caption generation
     ↓
-Critic
+Deterministic checks
     ↓
-Revision if needed
+PENDING_REVIEW
     ↓
-PASS
+Human approval
+    ↓
+APPROVED
 ```
 
 ## LLM routing
@@ -197,10 +221,12 @@ docker/                         PostgreSQL + pgvector
 db/migrations/                  Ordered SQL migrations
 src/dhoni_instagram_agent/
     api/                        FastAPI endpoints
+    content_calendar/           Content Calendar persistence
     embeddings/                 Embedding/indexing/retrieval services
     ingestion/                  Normalization and persistence
     llm/                        Multi-provider LLM router
-    rag/                        Generator, critic, grounded RAG
+    rag/                        Generator, critic, deterministic grounding
+
 docs/                           Architecture, security, operations, ADRs
 n8n/                            Workflow definitions
 tests/                          Unit and integration tests
@@ -238,10 +264,10 @@ Validated knowledge ingestion and persistence.
 Embeddings, pgvector indexing, and semantic retrieval.
 
 ### Phase 3
-Grounded generation, verification gate, critic/revision loop, and multi-provider LLM routing.
+Grounded generation, verification gate, multi-provider LLM routing, and Content Calendar foundation.
 
 ### Next
-Content Calendar integration, human approval workflow, asset selection, scheduling, and Instagram publishing.
+n8n Content Calendar automation, human approval workflow, asset selection, scheduling, and Instagram publishing.
 
 ## Security
 
