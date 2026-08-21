@@ -41,3 +41,36 @@ class RagCriticRequest(BaseModel):
 
     caption: str = Field(min_length=1)
     evidence: list[GroundedEvidence]
+
+
+class ContentCalendarCreateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    post_id: str = Field(min_length=1)
+    scheduled_date: str | None = None
+    scheduled_time: str | None = None
+    content_type: str = Field(min_length=1)
+    topic: str | None = None
+    quote_stat: str | None = None
+    source_url: str | None = None
+    asset_id: str | None = None
+    caption: str | None = None
+    overlay_text: str | None = None
+    status: str = "DRAFT"
+
+
+class ContentCalendarUpdateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    scheduled_date: str | None = None
+    scheduled_time: str | None = None
+    content_type: str | None = None
+    topic: str | None = None
+    quote_stat: str | None = None
+    source_url: str | None = None
+    asset_id: str | None = None
+    caption: str | None = None
+    overlay_text: str | None = None
+    status: str | None = None
+    published: bool | None = None
+    instagram_media_id: str | None = None

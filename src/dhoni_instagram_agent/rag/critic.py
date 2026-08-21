@@ -1,29 +1,21 @@
 from __future__ import annotations
 
 import json
+import re
 
 from dhoni_instagram_agent.config import Settings
 from dhoni_instagram_agent.llm.models import LLMRequest
 from dhoni_instagram_agent.llm.router import LLMRouter
+from dhoni_instagram_agent.rag.grounding import check_grounding
 from dhoni_instagram_agent.rag.models import CriticResult
 
 
 SYSTEM_INSTRUCTION = """
-You are a strict fact-checking critic for an MS Dhoni Instagram account.
+You are a strict factual critic for an MS Dhoni Instagram account.
 
-Check the caption ONLY against the supplied evidence.
+Check ONLY factual support.
 
-PASS only when:
-1. All factual claims are supported.
-2. No quote is invented.
-3. No statistic is invented.
-4. Caption is complete.
-5. Caption has at least 2 complete sentences.
-6. Caption is between 40 and 500 characters.
-
-REVISE when any rule fails.
-
-Return only:
+Return exactly:
 
 STATUS: PASS
 ISSUES: none
@@ -32,22 +24,73 @@ OR
 
 STATUS: REVISE
 ISSUES:
-- issue 1
-- issue 2
+- clear reason
+
+Do not use vague labels.
 """
 
 
 class GroundingCritic:
-    """Check caption facts and basic caption quality using the LLM router."""
-
     def __init__(self, settings: Settings) -> None:
         self.router = LLMRouter(settings)
+
+    @staticmethod
+    def _deterministic_checks(caption: str) -> list[str]:
+        issues: list[str] = []
+
+        text = caption.strip()
+
+        if len(text) < 40:
+            issues.append("Caption is shorter than 40 characters.")
+
+        if len(text) > 500:
+            issues.append("Caption is longer than 500 characters.")
+
+        sentence_count = len(
+            re.findall(r"[.!?](?:\s|$)", text)
+        )
+
+        if sentence_count < 2:
+            issues.append(
+                "Caption must contain at least 2 complete sentences."
+            )
+
+        if text.startswith(("\"", "'", "“", "‘")) and text.endswith(
+            ("\"", "'", "”", "’")
+        ):
+            issues.append(
+                "Caption is wrapped in unnecessary quotation marks."
+            )
+
+        return issues
 
     def evaluate(
         self,
         caption: str,
         evidence: list[dict],
     ) -> CriticResult:
+
+        deterministic_issues = self._deterministic_checks(caption)
+
+        if deterministic_issues:
+            return CriticResult(
+                status="REVISE",
+                issues=deterministic_issues,
+            )
+
+        grounding = check_grounding(
+            caption=caption,
+            evidence=evidence,
+        )
+
+        # Exact/supporting evidence found.
+        # Do not let an LLM critic reject a claim explicitly supported
+        # by the knowledge base.
+        if grounding.supported:
+            return CriticResult(
+                status="PASS",
+                issues=[],
+            )
 
         prompt = f"""
 CAPTION:
@@ -56,13 +99,15 @@ CAPTION:
 EVIDENCE:
 {json.dumps(evidence, ensure_ascii=False, indent=2)}
 
-Check:
-- Are all facts supported?
-- Is any quote invented?
-- Is any statistic unsupported?
-- Is the caption complete?
-- Does it contain at least 2 complete sentences?
-- Is it between 40 and 500 characters?
+Check every factual claim in the caption.
+
+Reject:
+- unsupported facts
+- unsupported statistics
+- unsupported quotes
+- claims stronger than the evidence supports
+
+Approve only when factual claims are supported.
 """
 
         result = self.router.generate(
@@ -80,14 +125,14 @@ Check:
 
         raw = result.text.strip()
 
+        status = "REVISE"
+        issues: list[str] = []
+
         lines = [
             line.strip()
             for line in raw.splitlines()
             if line.strip()
         ]
-
-        status = "REVISE"
-        issues: list[str] = []
 
         for line in lines:
             upper = line.upper()
@@ -106,6 +151,11 @@ Check:
 
             elif line.startswith("- "):
                 issues.append(line[2:].strip())
+
+        if not issues and status == "REVISE":
+            issues.append(
+                "LLM critic rejected the caption without a clear reason."
+            )
 
         return CriticResult(
             status=status,
