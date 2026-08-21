@@ -6,7 +6,6 @@ from dhoni_instagram_agent.config import Settings
 from dhoni_instagram_agent.embeddings.service import search
 from dhoni_instagram_agent.llm.models import LLMRequest
 from dhoni_instagram_agent.llm.router import LLMRouter
-from dhoni_instagram_agent.rag.critic import GroundingCritic
 from dhoni_instagram_agent.rag.models import (
     GroundedEvidence,
     RagGenerateResponse,
@@ -51,12 +50,17 @@ BAD_PREFIXES = (
 
 
 class GroundedGenerator:
-    MAX_REVISIONS = 2
+    """Generate captions from verified evidence.
+
+    Automatic LLM critic/revision is intentionally disabled in the main
+    generation path. This avoids spending multiple LLM requests per post and
+    prevents a second LLM from becoming an unreliable blocking gate. The
+    standalone critic endpoint remains available for experiments and future
+    provider configurations.
+    """
 
     def __init__(self, settings: Settings) -> None:
-        self.settings = settings
         self.router = LLMRouter(settings)
-        self.critic = GroundingCritic(settings)
 
     @staticmethod
     def _clean_caption(text: str) -> str:
@@ -99,10 +103,7 @@ class GroundedGenerator:
         self,
         request: str,
         evidence: list[GroundedEvidence],
-        previous_caption: str | None = None,
-        critic_issues: list[str] | None = None,
     ) -> str:
-
         evidence_payload = [
             {
                 "knowledge_id": item.knowledge_id,
@@ -114,25 +115,11 @@ class GroundedGenerator:
             for item in evidence
         ]
 
-        revision = ""
-
-        if previous_caption:
-            revision = f"""
-Previous caption:
-{previous_caption}
-
-Critic issues:
-{json.dumps(critic_issues or [], ensure_ascii=False)}
-
-Rewrite it.
-Return ONLY the final caption.
-"""
-
         return f"""
 User request:
 {request}
 
-Evidence:
+Relevant verified evidence:
 {json.dumps(evidence_payload, ensure_ascii=False, indent=2)}
 
 Write ONE final Instagram caption.
@@ -141,14 +128,12 @@ Requirements:
 - 2-3 complete sentences
 - 20-500 characters
 - natural fan-account tone
-- use ONLY the evidence
+- use ONLY the evidence above
 - no unsupported claims
 - no fake quotes
 - no invented statistics
 - no analysis
 - no drafting text
-
-{revision}
 """
 
     def generate(
@@ -156,9 +141,8 @@ Requirements:
         request: str,
         top_k: int = 5,
     ) -> RagGenerateResponse:
-
         retrieved = search(
-            self.settings,
+            Settings(),
             request,
             top_k=top_k,
         )
@@ -196,61 +180,25 @@ Requirements:
                 ],
             )
 
+        generation_evidence = verified_evidence[:2]
+
         caption = self._generate(
             self._build_prompt(
                 request,
-                verified_evidence,
+                generation_evidence,
             )
         )
 
-        for revision in range(self.MAX_REVISIONS + 1):
-
-            critic_result = self.critic.evaluate(
-                caption=caption,
-                evidence=[
-                    item.model_dump()
-                    for item in verified_evidence
-                ],
-            )
-
-            if critic_result.status == "PASS":
-                return RagGenerateResponse(
-                    request=request,
-                    caption=caption,
-                    grounded=True,
-                    evidence=verified_evidence,
-                    evidence_ids=[
-                        item.knowledge_id
-                        for item in verified_evidence
-                    ],
-                    notes=[
-                        f"Critic PASS after {revision} revision(s)."
-                    ],
-                )
-
-            if revision == self.MAX_REVISIONS:
-                return RagGenerateResponse(
-                    request=request,
-                    caption=caption,
-                    grounded=False,
-                    evidence=verified_evidence,
-                    evidence_ids=[
-                        item.knowledge_id
-                        for item in verified_evidence
-                    ],
-                    notes=[
-                        "Critic could not approve the caption.",
-                        *critic_result.issues,
-                    ],
-                )
-
-            caption = self._generate(
-                self._build_prompt(
-                    request,
-                    verified_evidence,
-                    previous_caption=caption,
-                    critic_issues=critic_result.issues,
-                )
-            )
-
-        raise RuntimeError("Unexpected RAG revision state.")
+        return RagGenerateResponse(
+            request=request,
+            caption=caption,
+            grounded=True,
+            evidence=verified_evidence,
+            evidence_ids=[
+                item.knowledge_id for item in verified_evidence
+            ],
+            notes=[
+                "Generated from VERIFIED evidence.",
+                "Automatic LLM critic disabled; human review required before publishing.",
+            ],
+        )
