@@ -30,6 +30,8 @@ class Settings(BaseSettings):
     gemini_api_key: SecretStr
     openai_api_key: SecretStr
     anthropic_api_key: SecretStr
+    instagram_access_token: SecretStr
+    instagram_business_account_id: str
 
     embedding_model: str = "gemini-embedding-2"
     embedding_dimension: int = 768

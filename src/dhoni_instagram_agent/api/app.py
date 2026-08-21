@@ -28,6 +28,14 @@ from dhoni_instagram_agent.ingestion.service import ingest_batch
 from dhoni_instagram_agent.rag.critic import GroundingCritic
 from dhoni_instagram_agent.rag.generator import GroundedGenerator
 
+from dhoni_instagram_agent.publishing.assets import (
+    attach_available_asset,
+)
+
+from dhoni_instagram_agent.publishing.service import (
+    publish_post,
+)
+
 app = FastAPI(
     title="Dhoni Instagram Agent",
     version="0.3.0",
@@ -247,4 +255,62 @@ def patch_content_calendar(
         raise HTTPException(
             status_code=500,
             detail=f"Content calendar update failed: {error}",
+        ) from error
+
+
+@app.post("/v1/content-calendar/{post_id}/attach-asset")
+def attach_content_calendar_asset(
+    post_id: str,
+) -> dict[str, object]:
+    try:
+        import psycopg
+
+        settings = Settings()
+
+        with psycopg.connect(settings.database_url) as connection:
+            return attach_available_asset(
+                connection,
+                post_id,
+            )
+
+    except ValueError as error:
+        raise HTTPException(
+            status_code=400,
+            detail=str(error),
+        ) from error
+
+    except Exception as error:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Asset attachment failed: {error}",
+        ) from error
+
+
+@app.post("/v1/instagram/publish/{post_id}")
+def publish_instagram_post(
+    post_id: str,
+    dry_run: bool = True,
+) -> dict[str, object]:
+    try:
+        import psycopg
+
+        settings = Settings()
+
+        with psycopg.connect(settings.database_url) as connection:
+            return publish_post(
+                connection,
+                post_id,
+                dry_run=dry_run,
+            )
+
+    except ValueError as error:
+        raise HTTPException(
+            status_code=400,
+            detail=str(error),
+        ) from error
+
+    except Exception as error:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Instagram publishing failed: {error}",
         ) from error
