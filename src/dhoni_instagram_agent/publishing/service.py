@@ -8,7 +8,6 @@ import requests
 
 from dhoni_instagram_agent.config import Settings
 
-
 GRAPH_BASE_URL = "https://graph.facebook.com/v23.0"
 
 

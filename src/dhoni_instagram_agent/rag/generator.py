@@ -11,7 +11,6 @@ from dhoni_instagram_agent.rag.models import (
     RagGenerateResponse,
 )
 
-
 SYSTEM_INSTRUCTION = """
 You write Instagram captions for an MS Dhoni fan account.
 

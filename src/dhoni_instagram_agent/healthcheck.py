@@ -11,8 +11,7 @@ from dhoni_instagram_agent.config import Settings
 
 def main() -> None:
     try:
-        with psycopg.connect(Settings().database_url) as connection:
-            with connection.cursor() as cursor:
+        with psycopg.connect(Settings().database_url) as connection, connection.cursor() as cursor:
                 cursor.execute("SELECT 1")
                 cursor.execute(
                     "SELECT EXISTS ("

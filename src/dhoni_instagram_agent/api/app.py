@@ -5,16 +5,15 @@ from datetime import date, time
 from fastapi import FastAPI, HTTPException
 
 from dhoni_instagram_agent.api.models import (
+    ContentCalendarCreateRequest,
+    ContentCalendarUpdateRequest,
     EmbeddingIndexRequest,
     IngestionBatch,
     RagCriticRequest,
     RagGenerateRequest,
     RetrievalRequest,
-    ContentCalendarCreateRequest,
-    ContentCalendarUpdateRequest,
 )
 from dhoni_instagram_agent.config import Settings
-
 from dhoni_instagram_agent.content_calendar.repository import (
     create_post,
     list_posts,
@@ -25,16 +24,14 @@ from dhoni_instagram_agent.embeddings.service import (
     search,
 )
 from dhoni_instagram_agent.ingestion.service import ingest_batch
-from dhoni_instagram_agent.rag.critic import GroundingCritic
-from dhoni_instagram_agent.rag.generator import GroundedGenerator
-
 from dhoni_instagram_agent.publishing.assets import (
     attach_available_asset,
 )
-
 from dhoni_instagram_agent.publishing.service import (
     publish_post,
 )
+from dhoni_instagram_agent.rag.critic import GroundingCritic
+from dhoni_instagram_agent.rag.generator import GroundedGenerator
 
 app = FastAPI(
     title="Dhoni Instagram Agent",

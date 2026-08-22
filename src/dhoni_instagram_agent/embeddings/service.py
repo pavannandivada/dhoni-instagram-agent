@@ -112,11 +112,10 @@ def search(
 
     top_k = max(1, min(top_k, 50))
 
-    with psycopg.connect(settings.database_url) as connection:
-        with connection.cursor() as cursor:
-            if collection:
-                cursor.execute(
-                    """
+    with psycopg.connect(settings.database_url) as connection, connection.cursor() as cursor:
+        if collection:
+            cursor.execute(
+                """
                     SELECT
                         kd.id,
                         kd.source_collection,
@@ -133,17 +132,17 @@ def search(
                     ORDER BY ke.embedding <=> %s::vector
                     LIMIT %s
                     """,
-                    (
-                        query_vector,
-                        settings.embedding_model,
-                        collection,
-                        query_vector,
-                        top_k,
-                    ),
-                )
-            else:
-                cursor.execute(
-                    """
+                (
+                    query_vector,
+                    settings.embedding_model,
+                    collection,
+                    query_vector,
+                    top_k,
+                ),
+            )
+        else:
+            cursor.execute(
+                """
                     SELECT
                         kd.id,
                         kd.source_collection,
@@ -159,15 +158,15 @@ def search(
                     ORDER BY ke.embedding <=> %s::vector
                     LIMIT %s
                     """,
-                    (
-                        query_vector,
-                        settings.embedding_model,
-                        query_vector,
-                        top_k,
-                    ),
-                )
+                (
+                    query_vector,
+                    settings.embedding_model,
+                    query_vector,
+                    top_k,
+                ),
+            )
 
-            rows = cursor.fetchall()
+        rows = cursor.fetchall()
 
     return [
         {

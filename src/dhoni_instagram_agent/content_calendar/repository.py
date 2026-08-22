@@ -5,7 +5,6 @@ from typing import Any
 
 import psycopg
 
-
 ALLOWED_STATUSES = {
     "DRAFT",
     "PENDING_REVIEW",
@@ -110,7 +109,7 @@ def create_post(
         "updated_at",
     ]
 
-    return dict(zip(columns, row))
+    return dict(zip(columns, row, strict=True))
 
 
 def list_posts(
@@ -197,7 +196,7 @@ def list_posts(
         "updated_at",
     ]
 
-    return [dict(zip(columns, row)) for row in rows]
+    return [dict(zip(columns, row, strict=True)) for row in rows]
 
 
 def update_post(
@@ -293,4 +292,4 @@ def update_post(
         "updated_at",
     ]
 
-    return dict(zip(columns, row))
+    return dict(zip(columns, row, strict=True))

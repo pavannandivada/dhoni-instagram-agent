@@ -9,7 +9,6 @@ from dhoni_instagram_agent.llm.router import LLMRouter
 from dhoni_instagram_agent.rag.grounding import check_grounding
 from dhoni_instagram_agent.rag.models import CriticResult
 
-
 SYSTEM_INSTRUCTION = """
 You are a strict factual critic for an MS Dhoni Instagram account.
 

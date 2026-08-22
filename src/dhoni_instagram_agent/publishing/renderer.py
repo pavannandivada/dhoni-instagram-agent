@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import textwrap
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
@@ -96,7 +95,6 @@ def render_overlay(
 
     total_height = sum(line_heights) + spacing * (len(lines) - 1)
 
-    padding_x = int(width * 0.06)
     padding_y = int(height * 0.025)
 
     box_top = height - total_height - (padding_y * 2)
@@ -115,7 +113,7 @@ def render_overlay(
 
     y = box_top + padding_y
 
-    for line, line_height in zip(lines, line_heights):
+    for line, line_height in zip(lines, line_heights, strict=True):
         bbox = draw.textbbox(
             (0, 0),
             line,
