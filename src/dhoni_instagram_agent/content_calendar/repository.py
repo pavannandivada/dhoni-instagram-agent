@@ -222,19 +222,12 @@ def update_post(
         "instagram_media_id",
     }
 
-    updates = {
-        key: value
-        for key, value in updates.items()
-        if key in allowed_fields
-    }
+    updates = {key: value for key, value in updates.items() if key in allowed_fields}
 
     if not updates:
         raise ValueError("No valid fields to update.")
 
-    assignments = ", ".join(
-        f"{field} = %s"
-        for field in updates
-    )
+    assignments = ", ".join(f"{field} = %s" for field in updates)
 
     values = list(updates.values())
     values.append(post_id)

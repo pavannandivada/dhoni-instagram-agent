@@ -38,9 +38,7 @@ def check_grounding(
             continue
 
         phrases = [
-            phrase.strip()
-            for phrase in re.split(r"[.!?;]", content)
-            if len(phrase.strip()) >= 20
+            phrase.strip() for phrase in re.split(r"[.!?;]", content) if len(phrase.strip()) >= 20
         ]
 
         matched = False
@@ -63,7 +61,5 @@ def check_grounding(
     return GroundingResult(
         supported=False,
         matched_evidence_ids=[],
-        issues=[
-            "No substantial caption phrase was found directly in the supplied evidence."
-        ],
+        issues=["No substantial caption phrase was found directly in the supplied evidence."],
     )

@@ -35,14 +35,10 @@ def attach_available_asset(
         status, published, current_asset_id = post
 
         if published:
-            raise AssetSelectionError(
-                f"Post {post_id} is already published."
-            )
+            raise AssetSelectionError(f"Post {post_id} is already published.")
 
         if status != "APPROVED":
-            raise AssetSelectionError(
-                f"Post {post_id} is not APPROVED. Current status: {status}"
-            )
+            raise AssetSelectionError(f"Post {post_id} is not APPROVED. Current status: {status}")
 
         if current_asset_id:
             return {
@@ -71,9 +67,7 @@ def attach_available_asset(
         asset = cursor.fetchone()
 
         if asset is None:
-            raise AssetSelectionError(
-                "No verified, unused, rights-cleared asset is available."
-            )
+            raise AssetSelectionError("No verified, unused, rights-cleared asset is available.")
 
         selected_asset_id = asset[0]
 
@@ -91,9 +85,7 @@ def attach_available_asset(
         result = cursor.fetchone()
 
         if result is None:
-            raise AssetSelectionError(
-                "Failed to attach asset to content calendar post."
-            )
+            raise AssetSelectionError("Failed to attach asset to content calendar post.")
 
         connection.commit()
 

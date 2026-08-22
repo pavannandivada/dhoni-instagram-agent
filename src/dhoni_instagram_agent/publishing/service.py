@@ -19,10 +19,7 @@ def _meta_error(response: requests.Response) -> str:
     try:
         data = response.json()
         error = data.get("error", {})
-        return (
-            f"Meta API error {error.get('code')}: "
-            f"{error.get('message', response.text)}"
-        )
+        return f"Meta API error {error.get('code')}: {error.get('message', response.text)}"
     except Exception:
         return f"Meta API HTTP {response.status_code}: {response.text}"
 
@@ -83,9 +80,7 @@ def publish_post(
             }
 
         if status != "APPROVED":
-            raise PublishError(
-                f"Post {post_id} is not APPROVED. Current status: {status}"
-            )
+            raise PublishError(f"Post {post_id} is not APPROVED. Current status: {status}")
 
         if not caption:
             raise PublishError(f"Post {post_id} has no caption.")
@@ -114,28 +109,20 @@ def publish_post(
         image_url, verified, used, rights_status = asset
 
         if not verified:
-            raise PublishError(
-                f"Asset {asset_id} is not verified."
-            )
+            raise PublishError(f"Asset {asset_id} is not verified.")
 
         if used:
-            raise PublishError(
-                f"Asset {asset_id} has already been used."
-            )
+            raise PublishError(f"Asset {asset_id} has already been used.")
 
         if str(rights_status).strip().lower() not in {
             "owned",
             "licensed",
             "rights-cleared",
         }:
-            raise PublishError(
-                f"Asset {asset_id} does not have an acceptable rights status."
-            )
+            raise PublishError(f"Asset {asset_id} does not have an acceptable rights status.")
 
         if not image_url:
-            raise PublishError(
-                f"Asset {asset_id} has no source URL."
-            )
+            raise PublishError(f"Asset {asset_id} has no source URL.")
 
         # Remove accidental outer quotes produced by an LLM.
         clean_caption = caption.strip()
@@ -172,9 +159,7 @@ def publish_post(
             creation_id = body.get("id")
 
             if not creation_id:
-                raise PublishError(
-                    f"Meta did not return a creation ID: {body}"
-                )
+                raise PublishError(f"Meta did not return a creation ID: {body}")
 
             cursor.execute(
                 """
@@ -198,9 +183,7 @@ def publish_post(
             }
 
         # Give Meta a short window to finish processing.
-        status_url = (
-            f"{GRAPH_BASE_URL}/{creation_id}"
-        )
+        status_url = f"{GRAPH_BASE_URL}/{creation_id}"
 
         for _ in range(10):
             status_response = requests.get(
@@ -213,9 +196,7 @@ def publish_post(
             )
 
             if not status_response.ok:
-                raise PublishError(
-                    _meta_error(status_response)
-                )
+                raise PublishError(_meta_error(status_response))
 
             status_body = status_response.json()
             status_code = status_body.get("status_code")
@@ -227,16 +208,12 @@ def publish_post(
                 "ERROR",
                 "EXPIRED",
             }:
-                raise PublishError(
-                    f"Instagram container failed: {status_body}"
-                )
+                raise PublishError(f"Instagram container failed: {status_body}")
 
             time.sleep(3)
 
         else:
-            raise PublishError(
-                "Instagram container did not become ready within the retry window."
-            )
+            raise PublishError("Instagram container did not become ready within the retry window.")
 
         publish_response = requests.post(
             f"{GRAPH_BASE_URL}/{ig_user_id}/media_publish",
@@ -248,17 +225,13 @@ def publish_post(
         )
 
         if not publish_response.ok:
-            raise PublishError(
-                _meta_error(publish_response)
-            )
+            raise PublishError(_meta_error(publish_response))
 
         publish_body = publish_response.json()
         media_id = publish_body.get("id")
 
         if not media_id:
-            raise PublishError(
-                f"Meta did not return an Instagram Media ID: {publish_body}"
-            )
+            raise PublishError(f"Meta did not return an Instagram Media ID: {publish_body}")
 
         cursor.execute(
             """

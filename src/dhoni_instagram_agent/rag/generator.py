@@ -39,7 +39,6 @@ BAD_PREFIXES = (
 
 
 class GroundedGenerator:
-
     def __init__(self, settings: Settings) -> None:
         self.router = LLMRouter(settings)
 
@@ -58,9 +57,7 @@ class GroundedGenerator:
 
         for prefix in BAD_PREFIXES:
             if caption.lower().startswith(prefix):
-                raise RuntimeError(
-                    f"Invalid caption prefix returned: {prefix}"
-                )
+                raise RuntimeError(f"Invalid caption prefix returned: {prefix}")
 
         return caption
 
@@ -128,11 +125,7 @@ Requirements:
             for item in retrieved
         ]
 
-        verified_evidence = [
-            item
-            for item in evidence
-            if item.verification_status == "VERIFIED"
-        ]
+        verified_evidence = [item for item in evidence if item.verification_status == "VERIFIED"]
 
         if not verified_evidence:
             return RagGenerateResponse(
@@ -140,9 +133,7 @@ Requirements:
                 caption="",
                 grounded=False,
                 evidence=evidence,
-                evidence_ids=[
-                    item.knowledge_id for item in evidence
-                ],
+                evidence_ids=[item.knowledge_id for item in evidence],
                 notes=[
                     "No VERIFIED evidence available.",
                     "Human verification required before generation.",
@@ -162,10 +153,7 @@ Requirements:
             )
         )
 
-        print(
-            f"RAG writer provider={result.provider} "
-            f"model={result.model}"
-        )
+        print(f"RAG writer provider={result.provider} model={result.model}")
 
         caption = self._clean_caption(result.text)
 
@@ -174,9 +162,7 @@ Requirements:
             caption=caption,
             grounded=True,
             evidence=verified_evidence,
-            evidence_ids=[
-                item.knowledge_id for item in verified_evidence
-            ],
+            evidence_ids=[item.knowledge_id for item in verified_evidence],
             notes=[
                 "Generated from VERIFIED evidence.",
                 "Automatic LLM critic disabled; human review required before publishing.",

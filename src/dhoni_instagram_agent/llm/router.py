@@ -80,9 +80,7 @@ class LLMRouter:
         )
 
         text_parts = [
-            block.text
-            for block in response.content
-            if getattr(block, "type", None) == "text"
+            block.text for block in response.content if getattr(block, "type", None) == "text"
         ]
 
         text = "\n".join(text_parts).strip()
@@ -101,10 +99,7 @@ class LLMRouter:
             f"{self.settings.ollama_base_url}/api/generate",
             json={
                 "model": self.settings.ollama_model,
-                "prompt": (
-                    f"{request.system_instruction}\n\n"
-                    f"{request.prompt}"
-                ),
+                "prompt": (f"{request.system_instruction}\n\n{request.prompt}"),
                 "stream": False,
             },
             timeout=120,
@@ -138,10 +133,7 @@ class LLMRouter:
             try:
                 result = provider(request)
 
-                print(
-                    f"LLM provider={result.provider} "
-                    f"model={result.model}"
-                )
+                print(f"LLM provider={result.provider} model={result.model}")
 
                 return result
 
@@ -150,6 +142,4 @@ class LLMRouter:
                 print(f"LLM provider failed: {name}: {error}")
                 errors.append(f"{name}: {error}")
 
-        raise RuntimeError(
-            "All LLM providers failed: " + " | ".join(errors)
-        )
+        raise RuntimeError("All LLM providers failed: " + " | ".join(errors))

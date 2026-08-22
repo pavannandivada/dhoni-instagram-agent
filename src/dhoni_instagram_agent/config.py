@@ -38,7 +38,7 @@ class Settings(BaseSettings):
 
     generation_model: str = "gemini-3.7-flash"
     generation_fallback_model: str = "gemini-3.6-flash"
-    
+
     ollama_base_url: str = "http://127.0.0.1:11434"
     ollama_model: str = "llama3.2"
 

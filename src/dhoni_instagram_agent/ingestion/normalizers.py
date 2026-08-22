@@ -59,9 +59,7 @@ def normalize_quote(
         "title": quote_id,
         "content": quote or "",
         "source_url": source_url,
-        "verification_status": (
-            "VERIFIED" if verified else "UNVERIFIED"
-        ),
+        "verification_status": ("VERIFIED" if verified else "UNVERIFIED"),
         "rights_status": None,
         "raw_payload": row,
         "normalized_payload": {
@@ -100,9 +98,7 @@ def normalize_fact(
         "title": fact_id,
         "content": fact or "",
         "source_url": source_url,
-        "verification_status": (
-            "VERIFIED" if verified else "UNVERIFIED"
-        ),
+        "verification_status": ("VERIFIED" if verified else "UNVERIFIED"),
         "rights_status": None,
         "raw_payload": row,
         "normalized_payload": {
@@ -139,9 +135,7 @@ def normalize_asset(
         "title": file_name or asset_id,
         "content": file_name or "",
         "source_url": source_url,
-        "verification_status": (
-            "VERIFIED" if verified else "UNVERIFIED"
-        ),
+        "verification_status": ("VERIFIED" if verified else "UNVERIFIED"),
         "rights_status": license_value,
         "raw_payload": row,
         "normalized_payload": {
@@ -181,9 +175,7 @@ def normalize_event(
         "title": event_id,
         "content": description or "",
         "source_url": source_url,
-        "verification_status": (
-            "VERIFIED" if verified else "UNVERIFIED"
-        ),
+        "verification_status": ("VERIFIED" if verified else "UNVERIFIED"),
         "rights_status": None,
         "raw_payload": row,
         "normalized_payload": {

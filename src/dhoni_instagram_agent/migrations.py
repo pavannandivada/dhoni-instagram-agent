@@ -32,8 +32,7 @@ def _find_migrations_directory() -> Path:
             return directory
 
     raise FileNotFoundError(
-        "Could not locate db/migrations. "
-        "Run the command from the project repository root."
+        "Could not locate db/migrations. Run the command from the project repository root."
     )
 
 
@@ -55,9 +54,7 @@ def discover_migrations(directory: Path | None = None) -> list[Migration]:
     versions = [migration.version for migration in migrations]
 
     if len(versions) != len(set(versions)):
-        raise ValueError(
-            f"Duplicate migration version in {migration_directory}"
-        )
+        raise ValueError(f"Duplicate migration version in {migration_directory}")
 
     return migrations
 

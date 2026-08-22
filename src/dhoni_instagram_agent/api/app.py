@@ -122,10 +122,7 @@ def critic(
     request: RagCriticRequest,
 ) -> dict[str, object]:
     try:
-        evidence = [
-            item.model_dump()
-            for item in request.evidence
-        ]
+        evidence = [item.model_dump() for item in request.evidence]
 
         result = GroundingCritic(Settings()).evaluate(
             caption=request.caption,
@@ -147,14 +144,10 @@ def create_content_calendar_post(
 ) -> dict[str, object]:
     try:
         scheduled_date = (
-            date.fromisoformat(request.scheduled_date)
-            if request.scheduled_date
-            else None
+            date.fromisoformat(request.scheduled_date) if request.scheduled_date else None
         )
         scheduled_time = (
-            time.fromisoformat(request.scheduled_time)
-            if request.scheduled_time
-            else None
+            time.fromisoformat(request.scheduled_time) if request.scheduled_time else None
         )
 
         settings = Settings()
@@ -216,14 +209,10 @@ def patch_content_calendar(
         updates = request.model_dump(exclude_none=True)
 
         if "scheduled_date" in updates:
-            updates["scheduled_date"] = date.fromisoformat(
-                updates["scheduled_date"]
-            )
+            updates["scheduled_date"] = date.fromisoformat(updates["scheduled_date"])
 
         if "scheduled_time" in updates:
-            updates["scheduled_time"] = time.fromisoformat(
-                updates["scheduled_time"]
-            )
+            updates["scheduled_time"] = time.fromisoformat(updates["scheduled_time"])
 
         settings = Settings()
 

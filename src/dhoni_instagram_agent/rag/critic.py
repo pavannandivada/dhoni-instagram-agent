@@ -45,21 +45,13 @@ class GroundingCritic:
         if len(text) > 500:
             issues.append("Caption is longer than 500 characters.")
 
-        sentence_count = len(
-            re.findall(r"[.!?](?:\s|$)", text)
-        )
+        sentence_count = len(re.findall(r"[.!?](?:\s|$)", text))
 
         if sentence_count < 2:
-            issues.append(
-                "Caption must contain at least 2 complete sentences."
-            )
+            issues.append("Caption must contain at least 2 complete sentences.")
 
-        if text.startswith(("\"", "'", "“", "‘")) and text.endswith(
-            ("\"", "'", "”", "’")
-        ):
-            issues.append(
-                "Caption is wrapped in unnecessary quotation marks."
-            )
+        if text.startswith(('"', "'", "“", "‘")) and text.endswith(('"', "'", "”", "’")):
+            issues.append("Caption is wrapped in unnecessary quotation marks.")
 
         return issues
 
@@ -117,21 +109,14 @@ Approve only when factual claims are supported.
             )
         )
 
-        print(
-            f"RAG critic provider={result.provider} "
-            f"model={result.model}"
-        )
+        print(f"RAG critic provider={result.provider} model={result.model}")
 
         raw = result.text.strip()
 
         status = "REVISE"
         issues: list[str] = []
 
-        lines = [
-            line.strip()
-            for line in raw.splitlines()
-            if line.strip()
-        ]
+        lines = [line.strip() for line in raw.splitlines() if line.strip()]
 
         for line in lines:
             upper = line.upper()
@@ -152,9 +137,7 @@ Approve only when factual claims are supported.
                 issues.append(line[2:].strip())
 
         if not issues and status == "REVISE":
-            issues.append(
-                "LLM critic rejected the caption without a clear reason."
-            )
+            issues.append("LLM critic rejected the caption without a clear reason.")
 
         return CriticResult(
             status=status,
