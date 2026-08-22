@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 import psycopg
 
@@ -21,7 +22,6 @@ from dhoni_instagram_agent.ingestion.repository import (
     write_audit_event,
 )
 from dhoni_instagram_agent.ingestion.validators import VALIDATORS
-
 
 NORMALIZERS: dict[str, Callable[[dict[str, Any], int], dict[str, Any]]] = {
     "Quotes": normalize_quote,

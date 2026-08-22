@@ -4,6 +4,5 @@
 
 from dhoni_instagram_agent.migrate import main
 
-
 if __name__ == "__main__":
     main()

@@ -19,7 +19,13 @@ def upsert_knowledge_document(
 ) -> tuple[str, PersistenceAction]:
     from dhoni_instagram_agent.ingestion.hashing import content_hash
 
-    payload_hash = content_hash(record["normalized_payload"])
+    hash_payload = {
+        **record["normalized_payload"],
+        "verification_status": record["verification_status"],
+        "rights_status": record["rights_status"],
+    }
+
+    payload_hash = content_hash(hash_payload)
 
     with connection.cursor() as cursor:
         cursor.execute(
