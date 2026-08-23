@@ -146,20 +146,28 @@ Requirements:
 
         generation_evidence = verified_evidence[:2]
 
-        result = self.router.generate(
-            LLMRequest(
-                prompt=self._build_prompt(
-                    request,
-                    generation_evidence,
-                ),
-                system_instruction=SYSTEM_INSTRUCTION,
-                max_output_tokens=300,
+        prompt = self._build_prompt(request, generation_evidence)
+        caption = ""
+
+        for attempt in range(2):
+            result = self.router.generate(
+                LLMRequest(
+                    prompt=prompt,
+                    system_instruction=SYSTEM_INSTRUCTION,
+                    max_output_tokens=300,
+                )
             )
-        )
 
-        print(f"RAG writer provider={result.provider} model={result.model}")
+            print(f"RAG writer provider={result.provider} model={result.model}")
 
-        caption = self._clean_caption(result.text)
+            try:
+                caption = self._clean_caption(result.text)
+                break
+            except RuntimeError:
+                if attempt == 1:
+                    raise
+
+                prompt += "\nReturn exactly 2-3 complete sentences ending with punctuation."
 
         return RagGenerateResponse(
             request=request,
