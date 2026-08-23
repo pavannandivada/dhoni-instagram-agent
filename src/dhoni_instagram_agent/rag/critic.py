@@ -60,7 +60,6 @@ class GroundingCritic:
         caption: str,
         evidence: list[dict],
     ) -> CriticResult:
-
         deterministic_issues = self._deterministic_checks(caption)
 
         if deterministic_issues:

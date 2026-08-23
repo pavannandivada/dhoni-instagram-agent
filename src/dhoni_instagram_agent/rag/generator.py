@@ -66,7 +66,6 @@ class GroundedGenerator:
         request: str,
         evidence: list[GroundedEvidence],
     ) -> str:
-
         evidence_payload = [
             {
                 "knowledge_id": item.knowledge_id,
@@ -106,7 +105,6 @@ Requirements:
         request: str,
         top_k: int = 5,
     ) -> RagGenerateResponse:
-
         retrieved = search(
             Settings(),
             request,
