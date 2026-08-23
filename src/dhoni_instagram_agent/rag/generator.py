@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 
 from dhoni_instagram_agent.config import Settings
 from dhoni_instagram_agent.embeddings.service import search
@@ -54,6 +55,11 @@ class GroundedGenerator:
 
         if len(caption) > 500:
             raise RuntimeError("Caption is too long.")
+
+        sentence_count = len(re.findall(r"[.!?](?:\s|$)", caption))
+
+        if sentence_count not in {2, 3}:
+            raise RuntimeError("Caption must contain 2-3 complete sentences.")
 
         for prefix in BAD_PREFIXES:
             if caption.lower().startswith(prefix):
