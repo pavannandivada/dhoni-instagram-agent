@@ -37,13 +37,13 @@ class Settings(BaseSettings):
     postgres_password: SecretStr | None = None
 
     # LLM providers
-    gemini_api_key: SecretStr
-    openai_api_key: SecretStr
-    anthropic_api_key: SecretStr
+    gemini_api_key: SecretStr = SecretStr("")
+    openai_api_key: SecretStr = SecretStr("")
+    anthropic_api_key: SecretStr = SecretStr("")
 
     # Instagram
-    instagram_access_token: SecretStr
-    instagram_business_account_id: str
+    instagram_access_token: SecretStr = SecretStr("")
+    instagram_business_account_id: str = ""
 
     # Embeddings / generation
     embedding_model: str = "gemini-embedding-2"

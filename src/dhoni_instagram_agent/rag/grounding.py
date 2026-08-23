@@ -2,6 +2,12 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from typing import TypedDict
+
+
+class EvidenceItem(TypedDict):
+    content: str
+    knowledge_id: str
 
 
 @dataclass(frozen=True)
@@ -17,7 +23,7 @@ def _normalize(text: str) -> str:
 
 def check_grounding(
     caption: str,
-    evidence: list[dict],
+    evidence: list[EvidenceItem],
 ) -> GroundingResult:
     """
     Conservative lexical grounding check.

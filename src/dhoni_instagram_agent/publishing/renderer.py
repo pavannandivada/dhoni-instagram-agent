@@ -38,7 +38,7 @@ def render_overlay(
         "/System/Library/Fonts/Helvetica.ttc",
     ]
 
-    font = None
+    font: ImageFont.FreeTypeFont | ImageFont.ImageFont | None = None
 
     for font_path in font_candidates:
         path = Path(font_path)

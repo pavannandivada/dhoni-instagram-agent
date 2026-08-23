@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import requests
 from anthropic import Anthropic
+from anthropic.types import TextBlock
 from google import genai
 from google.genai import types
 from openai import OpenAI
@@ -79,9 +80,7 @@ class LLMRouter:
             ],
         )
 
-        text_parts = [
-            block.text for block in response.content if getattr(block, "type", None) == "text"
-        ]
+        text_parts = [block.text for block in response.content if isinstance(block, TextBlock)]
 
         text = "\n".join(text_parts).strip()
 

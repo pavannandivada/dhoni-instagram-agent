@@ -6,7 +6,7 @@ import re
 from dhoni_instagram_agent.config import Settings
 from dhoni_instagram_agent.llm.models import LLMRequest
 from dhoni_instagram_agent.llm.router import LLMRouter
-from dhoni_instagram_agent.rag.grounding import check_grounding
+from dhoni_instagram_agent.rag.grounding import EvidenceItem, check_grounding
 from dhoni_instagram_agent.rag.models import CriticResult
 
 SYSTEM_INSTRUCTION = """
@@ -58,7 +58,7 @@ class GroundingCritic:
     def evaluate(
         self,
         caption: str,
-        evidence: list[dict],
+        evidence: list[EvidenceItem],
     ) -> CriticResult:
         deterministic_issues = self._deterministic_checks(caption)
 

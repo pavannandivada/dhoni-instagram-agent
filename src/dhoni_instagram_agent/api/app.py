@@ -32,6 +32,7 @@ from dhoni_instagram_agent.publishing.service import (
 )
 from dhoni_instagram_agent.rag.critic import GroundingCritic
 from dhoni_instagram_agent.rag.generator import GroundedGenerator
+from dhoni_instagram_agent.rag.grounding import EvidenceItem
 
 app = FastAPI(
     title="Dhoni Instagram Agent",
@@ -122,7 +123,13 @@ def critic(
     request: RagCriticRequest,
 ) -> dict[str, object]:
     try:
-        evidence = [item.model_dump() for item in request.evidence]
+        evidence: list[EvidenceItem] = [
+            {
+                "content": item.content,
+                "knowledge_id": item.knowledge_id,
+            }
+            for item in request.evidence
+        ]
 
         result = GroundingCritic(Settings()).evaluate(
             caption=request.caption,
