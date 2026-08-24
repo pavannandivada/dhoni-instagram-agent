@@ -14,9 +14,7 @@ from google.cloud import storage
 from dhoni_instagram_agent.publishing.renderer import render_overlay
 
 GCS_BUCKET = "dhoni-instagram-media"
-GCP_SERVICE_ACCOUNT = (
-    "dhoni-instagram-runtime@dhoniinstagramautomation.iam.gserviceaccount.com"
-)
+GCP_SERVICE_ACCOUNT = "dhoni-instagram-runtime@dhoniinstagramautomation.iam.gserviceaccount.com"
 
 
 class MediaRenderError(RuntimeError):
@@ -36,9 +34,7 @@ def render_and_upload(
 
     response = requests.get(source_url, timeout=30)
     if not response.ok:
-        raise MediaRenderError(
-            f"Unable to download source image: HTTP {response.status_code}"
-        )
+        raise MediaRenderError(f"Unable to download source image: HTTP {response.status_code}")
 
     content_type = response.headers.get("content-type", "").lower()
     if not content_type.startswith("image/"):

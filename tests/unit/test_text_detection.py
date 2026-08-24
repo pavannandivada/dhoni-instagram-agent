@@ -21,7 +21,7 @@ def test_detect_existing_text_finds_rendered_text(tmp_path: Path) -> None:
 
     assert result.has_existing_text is True
     assert result.confidence > 0
-    #assert "never" in result.detected_tokens
+    # assert "never" in result.detected_tokens
     assert detect_existing_text(str(image_path)) is True
 
 

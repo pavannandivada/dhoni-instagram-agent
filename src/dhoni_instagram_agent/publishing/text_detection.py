@@ -45,9 +45,7 @@ def detect_existing_text_result(source_path: str) -> TextDetectionResult:
     try:
         import pytesseract
     except ImportError as error:
-        raise TextDetectionError(
-            "pytesseract is required for existing-text detection."
-        ) from error
+        raise TextDetectionError("pytesseract is required for existing-text detection.") from error
 
     try:
         image = Image.open(source).convert("RGB")
@@ -82,9 +80,7 @@ def detect_existing_text_result(source_path: str) -> TextDetectionResult:
 
     ranked = sorted(strongest.items(), key=lambda item: item[1], reverse=True)
     reliable = [token for token, confidence in ranked if len(token) >= 3 and confidence >= 45]
-    very_reliable = [
-        token for token, confidence in ranked if len(token) >= 4 and confidence >= 70
-    ]
+    very_reliable = [token for token, confidence in ranked if len(token) >= 4 and confidence >= 70]
 
     # Two reasonably confident words, or one strong word, is enough to protect the image.
     has_text = len(reliable) >= 2 or bool(very_reliable)

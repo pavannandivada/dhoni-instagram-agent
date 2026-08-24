@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Literal
 
 from PIL import Image, ImageDraw, ImageFont
+
 from dhoni_instagram_agent.publishing.text_detection import detect_existing_text
 
 RenderMode = Literal["QUOTE", "STANDARD", "MILESTONE"]
@@ -61,16 +62,12 @@ def _prepare_image(source: Path) -> Image.Image:
     if ratio < min_ratio:
         new_height = int(width / min_ratio)
         top = max(0, (height - new_height) // 2)
-        image = image.crop(
-            (0, top, width, top + new_height)
-        )
+        image = image.crop((0, top, width, top + new_height))
 
     elif ratio > max_ratio:
         new_width = height
         left = max(0, (width - new_width) // 2)
-        image = image.crop(
-            (left, 0, left + new_width, height)
-        )
+        image = image.crop((left, 0, left + new_width, height))
 
     # Normalize size while preserving the resulting aspect ratio.
     width, height = image.size
@@ -229,7 +226,7 @@ def _draw_standard(image: Image.Image, text: str) -> None:
     draw = ImageDraw.Draw(image, "RGBA")
 
     # Editorial lower panel.
-    #panel_top = 760
+    # panel_top = 760
     panel_top = int(image.height * 0.56)
     draw.rectangle(
         (0, panel_top, image.width, image.height),
