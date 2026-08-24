@@ -1,1 +1,0 @@
-Existing-text protection tests are maintained in test_text_detection.py.
