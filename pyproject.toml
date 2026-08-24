@@ -1,56 +1,47 @@
 [build-system]
-requires = ["hatchling>=1.27"]
-build-backend = "hatchling.build"
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "dhoni-instagram-agent"
-version = "0.1.0"
-description = "Self-hosted, grounded Instagram content platform for an MS Dhoni fan account."
-readme = "README.md"
+version = "0.3.0"
+description = "Grounded Instagram content agent for MS Dhoni fan content"
 requires-python = ">=3.12"
-license = { file = "LICENSE" }
-authors = [{ name = "pavannandivada" }]
 dependencies = [
-  "anthropic>=0.69,<1",
-  "fastapi>=0.116,<1",
-  "google-genai>=1.31,<2",
-  "openai>=1.99,<2",
-  "pillow>=11,<13",
-  "psycopg[binary]>=3.2,<4",
-  "pydantic-settings>=2.7,<3",
-  "requests>=2.32,<3",
-  "uvicorn[standard]>=0.35,<1",
+    "anthropic>=0.40.0",
+    "fastapi>=0.115.0",
+    "google-genai>=1.0.0",
+    "openai>=1.50.0",
+    "Pillow>=10.4.0",
+    "psycopg[binary]>=3.2.0",
+    "pydantic>=2.9.0",
+    "pytesseract>=0.3.13",
+    "requests>=2.32.0",
+    "uvicorn[standard]>=0.30.0",
 ]
-[project.scripts]
-dhoni-migrate = "dhoni_instagram_agent.migrate:main"
-dhoni-healthcheck = "dhoni_instagram_agent.healthcheck:main"
-dhoni-api = "dhoni_instagram_agent.api.run:main"
 
 [project.optional-dependencies]
 dev = [
-  "mypy>=1.14",
-  "pytest>=8.3",
-  "ruff>=0.9,<0.10",
+    "mypy>=1.11.0",
+    "pytest>=8.3.0",
+    "ruff>=0.6.0",
 ]
 
-[tool.hatch.build.targets.wheel]
-packages = ["src/dhoni_instagram_agent"]
+[project.scripts]
+dhoni-api = "dhoni_instagram_agent.api.app:app"
+dhoni-migrate = "dhoni_instagram_agent.migrate:main"
 
-[tool.pytest.ini_options]
-pythonpath = ["src"]
-testpaths = ["tests"]
-addopts = "-ra"
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [tool.ruff]
-target-version = "py312"
 line-length = 100
-src = ["src", "tests", "scripts"]
 
-[tool.ruff.lint]
-select = ["E", "F", "I", "UP", "B", "SIM"]
+target-version = "py312"
 
 [tool.mypy]
 python_version = "3.12"
 strict = true
-packages = ["dhoni_instagram_agent"]
-warn_unused_configs = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
