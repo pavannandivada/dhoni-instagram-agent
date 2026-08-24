@@ -32,22 +32,38 @@ def render_and_upload(
     if not overlay_text.strip():
         raise MediaRenderError("Overlay text is empty.")
 
-    response = requests.get(source_url, timeout=30)
-    if not response.ok:
-        raise MediaRenderError(f"Unable to download source image: HTTP {response.status_code}")
-
-    content_type = response.headers.get("content-type", "").lower()
-    if not content_type.startswith("image/"):
-        raise MediaRenderError(
-            f"Source URL did not return an image. Content-Type: {content_type or 'unknown'}"
-        )
-
     with tempfile.TemporaryDirectory(prefix="dhoni-render-") as temp_dir:
         temp_path = Path(temp_dir)
         source_path = temp_path / "source.jpg"
         output_path = temp_path / "rendered.jpg"
 
-        source_path.write_bytes(response.content)
+        storage_client = storage.Client()
+
+        if source_url.startswith(f"https://storage.googleapis.com/{GCS_BUCKET}/"):
+            object_name = source_url.removeprefix(f"https://storage.googleapis.com/{GCS_BUCKET}/")
+
+            blob = storage_client.bucket(GCS_BUCKET).blob(object_name)
+
+            try:
+                blob.download_to_filename(str(source_path))
+            except Exception as error:
+                raise MediaRenderError(f"Unable to download GCS source image: {error}") from error
+        else:
+            response = requests.get(source_url, timeout=30)
+
+            if not response.ok:
+                raise MediaRenderError(
+                    f"Unable to download source image: HTTP {response.status_code}"
+                )
+
+            content_type = response.headers.get("content-type", "").lower()
+
+            if not content_type.startswith("image/"):
+                raise MediaRenderError(
+                    f"Source URL did not return an image. Content-Type: {content_type or 'unknown'}"
+                )
+
+            source_path.write_bytes(response.content)
 
         render_overlay(
             source_path=str(source_path),
@@ -57,7 +73,6 @@ def render_and_upload(
 
         object_name = f"instagram-rendered/{post_id}.jpg"
 
-        storage_client = storage.Client()
         bucket = storage_client.bucket(GCS_BUCKET)
         blob = bucket.blob(object_name)
 
