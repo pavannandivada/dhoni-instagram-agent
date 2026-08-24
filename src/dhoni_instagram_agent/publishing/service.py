@@ -7,6 +7,7 @@ import psycopg
 import requests
 
 from dhoni_instagram_agent.config import Settings
+from dhoni_instagram_agent.publishing.media import render_and_upload
 
 GRAPH_BASE_URL = "https://graph.facebook.com/v23.0"
 
@@ -47,7 +48,8 @@ def publish_post(
                 instagram_media_id,
                 instagram_creation_id,
                 caption,
-                asset_id
+                asset_id,
+                overlay_text
             FROM content_calendar
             WHERE post_id = %s
             FOR UPDATE
@@ -68,6 +70,7 @@ def publish_post(
             instagram_creation_id,
             caption,
             asset_id,
+            overlay_text,
         ) = row
 
         if published or instagram_media_id:
@@ -87,6 +90,9 @@ def publish_post(
 
         if not asset_id:
             raise PublishError(f"Post {post_id} has no asset_id.")
+
+        if not overlay_text or not overlay_text.strip():
+            raise PublishError(f"Post {post_id} has no overlay_text.")
 
         cursor.execute(
             """
@@ -138,15 +144,24 @@ def publish_post(
             "Authorization": f"Bearer {access_token}",
         }
 
-        # Reuse a previously created container when available.
         creation_id = instagram_creation_id
+        rendered_image_url: str | None = None
 
         if not creation_id:
+            try:
+                rendered_image_url = render_and_upload(
+                    source_url=image_url,
+                    post_id=post_id,
+                    overlay_text=overlay_text,
+                )
+            except Exception as error:
+                raise PublishError(f"Failed to render/upload Instagram image: {error}") from error
+
             response = requests.post(
                 f"{GRAPH_BASE_URL}/{ig_user_id}/media",
                 headers=headers,
                 data={
-                    "image_url": image_url,
+                    "image_url": rendered_image_url,
                     "caption": clean_caption,
                 },
                 timeout=30,
@@ -179,10 +194,9 @@ def publish_post(
                 "status": "CONTAINER_CREATED",
                 "dry_run": True,
                 "instagram_creation_id": creation_id,
-                "image_url": image_url,
+                "image_url": rendered_image_url or image_url,
             }
 
-        # Give Meta a short window to finish processing.
         status_url = f"{GRAPH_BASE_URL}/{creation_id}"
 
         for _ in range(10):
@@ -204,10 +218,7 @@ def publish_post(
             if status_code == "FINISHED":
                 break
 
-            if status_code in {
-                "ERROR",
-                "EXPIRED",
-            }:
+            if status_code in {"ERROR", "EXPIRED"}:
                 raise PublishError(f"Instagram container failed: {status_body}")
 
             time.sleep(3)
@@ -249,8 +260,7 @@ def publish_post(
             """
             UPDATE assets
             SET used = TRUE,
-                last_used = now(),
-                updated_at = now()
+                last_used = now()
             WHERE asset_id = %s
             """,
             (asset_id,),
@@ -265,4 +275,5 @@ def publish_post(
             "instagram_creation_id": creation_id,
             "instagram_media_id": media_id,
             "asset_id": asset_id,
+            "image_url": rendered_image_url,
         }
