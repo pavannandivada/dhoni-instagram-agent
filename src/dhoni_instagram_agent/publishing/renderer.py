@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Literal
+from typing import Literal, cast
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -45,7 +45,7 @@ def _load_font(size: int, bold: bool = False) -> ImageFont.FreeTypeFont:
             except OSError:
                 continue
 
-    return ImageFont.load_default()
+    return cast(ImageFont.FreeTypeFont, ImageFont.load_default())
 
 
 def _prepare_image(source: Path) -> Image.Image:
@@ -206,7 +206,7 @@ def _draw_quote(image: Image.Image, text: str) -> None:
             fill=WHITE,
         )
         bbox = draw.textbbox((0, 0), line, font=quote_font)
-        y += bbox[3] + 12
+        y += int(bbox[3]) + 12
 
     draw.line(
         (80, y + 20, 190, y + 20),
@@ -286,7 +286,7 @@ def _draw_standard(image: Image.Image, text: str) -> None:
         )
 
         bbox = draw.textbbox((0, 0), line, font=title_font)
-        y += bbox[3] + 4
+        y += int(bbox[3]) + 4
 
     draw.line(
         (70, y + 15, 300, y + 15),
@@ -345,7 +345,7 @@ def _draw_milestone(image: Image.Image, text: str) -> None:
             fill=GOLD,
         )
         bbox = draw.textbbox((0, 0), line, font=title_font)
-        y += bbox[3] + 5
+        y += int(bbox[3]) + 5
 
     draw.text(
         (75, y + 35),

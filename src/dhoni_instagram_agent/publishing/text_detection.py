@@ -43,7 +43,7 @@ def detect_existing_text_result(source_path: str) -> TextDetectionResult:
         raise TextDetectionError(f"Source image not found: {source}")
 
     try:
-        import pytesseract
+        import pytesseract  # type: ignore[import-untyped]
     except ImportError as error:
         raise TextDetectionError("pytesseract is required for existing-text detection.") from error
 

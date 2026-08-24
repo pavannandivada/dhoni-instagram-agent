@@ -9,7 +9,7 @@ import google.auth
 import requests
 from google.auth import iam
 from google.auth.transport import requests as google_requests
-from google.cloud import storage
+from google.cloud import storage  # type: ignore[import-untyped]
 
 from dhoni_instagram_agent.publishing.renderer import render_overlay
 
@@ -73,23 +73,23 @@ def _generate_signed_url(blob: storage.Blob) -> str:
     credentials, _ = google.auth.default()
 
     request = google_requests.Request()
-    credentials.refresh(request)
+    credentials.refresh(request)  # type: ignore[no-untyped-call]
 
     service_account_email = os.getenv(
         "GCP_SERVICE_ACCOUNT_EMAIL",
         GCP_SERVICE_ACCOUNT,
     )
 
-    signer = iam.Signer(
+    signer = iam.Signer(  # type: ignore[no-untyped-call]
         request,
         credentials,
         service_account_email,
     )
 
-    return blob.generate_signed_url(
+    return str(blob.generate_signed_url(
         version="v4",
         expiration=timedelta(hours=1),
         method="GET",
         credentials=signer,
         service_account_email=service_account_email,
-    )
+    ))
