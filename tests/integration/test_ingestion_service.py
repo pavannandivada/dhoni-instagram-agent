@@ -157,18 +157,17 @@ def test_audit_event_created(settings: Settings, clean_database) -> None:
         [quote_record()],
     )
 
-    with psycopg.connect(settings.database_url) as connection:
-        with connection.cursor() as cursor:
-            cursor.execute(
-                """
+    with psycopg.connect(settings.database_url) as connection, connection.cursor() as cursor:
+        cursor.execute(
+            """
                 SELECT event_type
                 FROM audit_events
                 WHERE subject_type = 'KNOWLEDGE_DOCUMENT'
                 ORDER BY created_at DESC
                 LIMIT 1
                 """
-            )
-            row = cursor.fetchone()
+        )
+        row = cursor.fetchone()
 
     assert row is not None
     assert row[0] == "KNOWLEDGE_INSERTED"
@@ -191,18 +190,17 @@ def test_skip_creates_audit_event(settings: Settings, clean_database) -> None:
         [record],
     )
 
-    with psycopg.connect(settings.database_url) as connection:
-        with connection.cursor() as cursor:
-            cursor.execute(
-                """
+    with psycopg.connect(settings.database_url) as connection, connection.cursor() as cursor:
+        cursor.execute(
+            """
                 SELECT event_type
                 FROM audit_events
                 WHERE subject_type = 'KNOWLEDGE_DOCUMENT'
                 ORDER BY created_at DESC
                 LIMIT 1
                 """
-            )
-            row = cursor.fetchone()
+        )
+        row = cursor.fetchone()
 
     assert row is not None
     assert row[0] == "KNOWLEDGE_SKIPPED"

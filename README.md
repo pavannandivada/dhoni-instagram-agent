@@ -1,65 +1,207 @@
 # Dhoni Instagram Agent
 
-A self-hosted, production-oriented agentic AI platform for an MS Dhoni fan account. It will plan, ground, validate, draft, approve, schedule, and publish Instagram content with a complete audit trail.
+A self-hosted, production-oriented agentic AI platform for an MS Dhoni fan account.
 
-> **Project status:** Phase 0 — foundation. The repository currently provides local PostgreSQL + pgvector, configuration, migrations, health checks, Python quality tooling, CI, and architecture decisions. It does **not** yet connect to Google, Gemini, n8n, Meta, or Instagram.
+The project ingests structured knowledge, generates embeddings, performs semantic retrieval, creates grounded Instagram captions from verified evidence, and routes LLM requests across multiple providers with a local Ollama fallback.
+
+> **Project status:** Phase 3 — grounded generation, verification gates, multi-provider LLM routing, and Content Calendar foundations.
+
+## Current capabilities
+
+- Google Sheets knowledge ingestion through n8n.
+- Knowledge storage in PostgreSQL.
+- pgvector semantic embeddings and retrieval.
+- Gemini embeddings.
+- Grounded caption generation using verified evidence only.
+- Multi-provider LLM routing:
+  - Gemini
+  - OpenAI
+  - Anthropic
+  - Ollama (last-resort local fallback)
+- Provider retry and fallback handling.
+- Deterministic caption sanity checks.
+- Human-review-first publishing flow.
+- Content Calendar CRUD API with `PENDING_REVIEW` and `APPROVED` states.
+- Standalone critic endpoint for future experiments and provider-specific evaluation.
+- Separate test database for integration tests.
+- Audit events for ingestion operations.
 
 ## Non-negotiable guardrails
 
 - Never generate, alter, or identity-transform a Dhoni photograph or video.
 - Never attribute a quote to Dhoni unless it is in the verified knowledge base with a source URL.
-- Keep evidence, prompts, decisions, selected assets, approval state, and publishing results auditable.
+- Never generate publishable content from unverified knowledge.
+- Keep evidence, prompts, decisions, approval state, and publishing results auditable.
 - Enforce deterministic validation, licensing, approval, and idempotency rules outside the LLM.
 - Keep credentials out of Git, prompts, workflow exports, and logs.
+- Integration tests must use the dedicated test database and must never wipe the development database.
 
 ## Architecture
 
 ```mermaid
 flowchart TD
-    Sheets[Google Sheets / Drive] --> Ingest[Knowledge ingestion]
-    Ingest --> PG[(PostgreSQL + pgvector)]
-    PG --> Retrieve[Retrieval service]
-    Retrieve --> Plan[Planner agent]
-    Plan --> Specialists[Quote / Stats / Event agents]
-    Specialists --> Validate[Deterministic validation + critic]
-    Validate --> HITL[Risk-based human approval]
-    HITL --> Assets[Rights-cleared real asset selection]
-    Assets --> Meta[Instagram Graph API]
-    Meta --> Learn[Analytics and evaluation]
+    Sheets[Google Sheets] --> N8N[n8n]
+    N8N --> API[FastAPI ingestion API]
+
+    API --> PG[(PostgreSQL)]
+    PG --> Embeddings[Gemini embeddings]
+    Embeddings --> Vector[(pgvector)]
+
+    Request[Content request] --> Retrieve[Semantic retrieval]
+    Vector --> Retrieve
+
+    Retrieve --> Verify{Verified evidence?}
+
+    Verify -->|No| Block[Block generation]
+    Verify -->|Yes| Router[LLM Router]
+
+    Router --> Gemini[Gemini]
+    Router --> OpenAI[OpenAI]
+    Router --> Claude[Anthropic]
+    Router --> Ollama[Ollama fallback]
+
+    Router --> Writer[Caption writer]
+    Writer --> Sanity[Deterministic caption checks]
+    Sanity --> HITL[Human approval]
+    HITL --> Calendar[Content Calendar]
+    Calendar --> Meta[Instagram / Meta API]
+    Meta --> Audit[Audit trail]
+
+    OptionalCritic[Optional standalone critic] -.-> Writer
 ```
 
-The Phase 0 baseline and target design are documented in [docs/architecture.md](docs/architecture.md). The roadmap is in [docs/implementation-plan.md](docs/implementation-plan.md).
+### Why the automatic critic is not in the main generation path
 
-## Local quick start
+A writer-plus-critic loop can consume multiple LLM requests for one post. It can also cause a second model to incorrectly reject a caption that is actually supported by the verified evidence.
+
+The main path therefore uses:
+
+```text
+Verified evidence
+    ↓
+One LLM generation path
+    ↓
+Deterministic sanity checks
+    ↓
+Human approval
+```
+
+The critic remains available as a standalone API for future evaluation, experiments, and provider-specific review strategies.
+
+The baseline and target design are documented in [docs/architecture.md](docs/architecture.md). The roadmap is in [docs/implementation-plan.md](docs/implementation-plan.md).
+
+## Current API
+
+```text
+GET    /health
+POST   /v1/ingestion/batch
+POST   /v1/embeddings/index
+POST   /v1/retrieval/search
+POST   /v1/rag/generate
+POST   /v1/rag/critic
+POST   /v1/content-calendar
+GET    /v1/content-calendar
+PATCH  /v1/content-calendar/{post_id}
+```
+
+## Example RAG flow
+
+```text
+Content request
+    ↓
+Retrieve top-k knowledge
+    ↓
+Require VERIFIED evidence
+    ↓
+LLM Router
+    ↓
+Caption generation
+    ↓
+Deterministic checks
+    ↓
+PENDING_REVIEW
+    ↓
+Human approval
+    ↓
+APPROVED
+```
+
+## LLM routing
+
+Providers are attempted in this order:
+
+```text
+1. Gemini
+2. OpenAI
+3. Anthropic
+4. Ollama
+```
+
+Ollama is the last-resort local fallback. Cloud providers remain preferred for production-quality generation.
+
+## Local setup
 
 ### Prerequisites
 
 - Docker Desktop with Docker Compose
 - Python 3.12+
+- Ollama (optional, used as local fallback)
 
-### Start the database
+### Start PostgreSQL
 
 ```bash
 cp .env.example .env
-# Edit POSTGRES_PASSWORD in .env before starting services.
+```
+
+Edit `.env` and configure the required database and API credentials.
+
+Then:
+
+```bash
 docker compose --env-file .env -f docker/docker-compose.yml up -d
 ```
 
-### Install the Python project and apply migrations
+### Install
 
 ```bash
 python3 -m venv .venv
 .venv/bin/python -m pip install --upgrade pip
 .venv/bin/python -m pip install -e '.[dev]'
-.venv/bin/python scripts/migrate.py
-.venv/bin/python scripts/healthcheck.py
 ```
 
-The health check verifies database connectivity and the `vector` extension. Stop the local stack with:
+### Run migrations
 
 ```bash
-docker compose --env-file .env -f docker/docker-compose.yml down
+.venv/bin/dhoni-migrate
 ```
+
+### Start API
+
+```bash
+.venv/bin/dhoni-api
+```
+
+Health check:
+
+```bash
+curl http://127.0.0.1:8000/health
+```
+
+## Test database
+
+Integration tests use a dedicated database:
+
+```text
+dhoni_agent_test
+```
+
+Run tests with:
+
+```bash
+POSTGRES_DB=dhoni_agent_test .venv/bin/pytest
+```
+
+Do not run integration tests against the development database.
 
 ## Development checks
 
@@ -67,23 +209,80 @@ docker compose --env-file .env -f docker/docker-compose.yml down
 .venv/bin/ruff check .
 .venv/bin/ruff format --check .
 .venv/bin/mypy src
-.venv/bin/pytest
+POSTGRES_DB=dhoni_agent_test .venv/bin/pytest
 ```
 
-GitHub Actions runs linting, formatting, type checks, and unit tests for pull requests and pushes to `main`.
+GitHub Actions runs linting, formatting, type checks, and tests for pull requests and pushes to `main`.
 
 ## Repository map
 
-- `docker/` — reproducible local PostgreSQL + pgvector service.
-- `db/migrations/` — ordered, append-only SQL migrations.
-- `src/dhoni_instagram_agent/` — application package and configuration/migration primitives.
-- `scripts/` — operator commands for migrations and health checks.
-- `docs/` — architecture, security, operations, implementation plan, and ADRs.
-- `n8n/`, `rag/`, `agents/`, `prompts/`, `evaluations/` — reserved for later phases.
+```text
+docker/                         PostgreSQL + pgvector
+db/migrations/                  Ordered SQL migrations
+src/dhoni_instagram_agent/
+    api/                        FastAPI endpoints
+    content_calendar/           Content Calendar persistence
+    embeddings/                 Embedding/indexing/retrieval services
+    ingestion/                  Normalization and persistence
+    llm/                        Multi-provider LLM router
+    rag/                        Generator, critic, deterministic grounding
+
+docs/                           Architecture, security, operations, ADRs
+n8n/                            Workflow definitions
+tests/                          Unit and integration tests
+```
 
 ## Engineering workflow
 
-The default branches are `main`, `develop`, and scoped `feature/*` branches. Implement and verify one phase at a time; do not connect production services or store real credentials during local development. See [CONTRIBUTING.md](CONTRIBUTING.md).
+Use scoped feature branches:
+
+```text
+feature/*
+```
+
+Implement and verify one phase at a time.
+
+Before merging:
+
+```text
+1. Run tests against dhoni_agent_test.
+2. Verify the local API.
+3. Verify the relevant n8n workflow.
+4. Review generated content and evidence.
+5. Open a pull request.
+```
+
+## Roadmap
+
+### Phase 0
+Foundation, local PostgreSQL, pgvector, configuration, migrations, CI.
+
+### Phase 1
+Validated knowledge ingestion and persistence.
+
+### Phase 2
+Embeddings, pgvector indexing, and semantic retrieval.
+
+### Phase 3
+Grounded generation, verification gate, multi-provider LLM routing, and Content Calendar foundation.
+
+### Next
+n8n Content Calendar automation, human approval workflow, asset selection, scheduling, and Instagram publishing.
+
+## Security
+
+Never commit:
+
+```text
+.env
+API keys
+Database passwords
+OAuth tokens
+Instagram credentials
+Service-account credentials
+```
+
+Use environment variables or local secret management.
 
 ## License
 

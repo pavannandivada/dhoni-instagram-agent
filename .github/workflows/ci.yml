@@ -11,6 +11,26 @@ permissions:
 jobs:
   quality:
     runs-on: ubuntu-latest
+    env:
+      POSTGRES_DB: dhoni_agent_test
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: 5432
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_DB: dhoni_agent_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd "pg_isready -U postgres -d dhoni_agent_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -24,5 +44,7 @@ jobs:
         run: ruff format --check .
       - name: Type check
         run: mypy src
+      - name: Run database migrations
+        run: dhoni-migrate
       - name: Unit tests
         run: pytest
