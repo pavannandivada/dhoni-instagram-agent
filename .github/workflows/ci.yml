@@ -11,12 +11,14 @@ permissions:
 jobs:
   quality:
     runs-on: ubuntu-latest
+
     env:
       POSTGRES_DB: dhoni_agent_test
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_HOST: 127.0.0.1
       POSTGRES_PORT: 5432
+
     services:
       postgres:
         image: pgvector/pgvector:pg17
@@ -31,22 +33,31 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 12
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Install project and development dependencies
-        run: python -m pip install -e '.[dev]'
-      - name: Lint
-        run: ruff check .
-      - name: Check formatting
-        run: ruff format --check .
-      - name: Type check
-        run: mypy src
-      - name: Run database migrations
-        run: dhoni-migrate
-      - name: Unit tests
-        run: pytest
+
       - name: Install OCR dependency
         run: sudo apt-get update && sudo apt-get install -y tesseract-ocr
+
+      - name: Install project and development dependencies
+        run: python -m pip install -e '.[dev]'
+
+      - name: Lint
+        run: ruff check .
+
+      - name: Check formatting
+        run: ruff format --check .
+
+      - name: Type check
+        run: mypy src
+
+      - name: Run database migrations
+        run: dhoni-migrate
+
+      - name: Unit tests
+        run: pytest
