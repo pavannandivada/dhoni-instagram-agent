@@ -31,8 +31,12 @@ def render_and_upload(
         raise MediaRenderError("Overlay text is empty.")
 
     settings = Settings()
+
     if not settings.gcs_bucket:
         raise MediaRenderError("GCS_BUCKET is not configured.")
+
+    if not settings.gcp_service_account_email:
+        raise MediaRenderError("GCP_SERVICE_ACCOUNT_EMAIL is not configured.")
 
     with tempfile.TemporaryDirectory(prefix="dhoni-render-") as temp_dir:
         temp_path = Path(temp_dir)
@@ -41,10 +45,12 @@ def render_and_upload(
 
         storage_client = storage.Client()
 
-        if source_url.startswith(f"https://storage.googleapis.com/{GCS_BUCKET}/"):
-            object_name = source_url.removeprefix(f"https://storage.googleapis.com/{GCS_BUCKET}/")
+        gcs_prefix = f"https://storage.googleapis.com/{settings.gcs_bucket}/"
 
-            blob = storage_client.bucket(GCS_BUCKET).blob(object_name)
+        if source_url.startswith(gcs_prefix):
+            object_name = unquote(source_url.removeprefix(gcs_prefix))
+
+            blob = storage_client.bucket(settings.gcs_bucket).blob(object_name)
 
             try:
                 blob.download_to_filename(str(source_path))
@@ -83,16 +89,16 @@ def render_and_upload(
             content_type="image/jpeg",
         )
 
-        return _generate_signed_url(blob, settings.gcp_service_account_email)
+        return _generate_signed_url(
+            blob,
+            settings.gcp_service_account_email,
+        )
 
 
 def _generate_signed_url(
     blob: storage.Blob,
     service_account_email: str,
 ) -> str:
-    if not service_account_email:
-        raise MediaRenderError("GCP_SERVICE_ACCOUNT_EMAIL is not configured.")
-
     credentials, _ = google.auth.default()
 
     request = google_requests.Request()
