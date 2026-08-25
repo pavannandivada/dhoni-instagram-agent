@@ -82,8 +82,8 @@ def publish_post(
                 "instagram_creation_id": instagram_creation_id,
             }
 
-        if status != "APPROVED":
-            raise PublishError(f"Post {post_id} is not APPROVED. Current status: {status}")
+        if status not in {"APPROVED", "SCHEDULED"}:
+            raise PublishError(f"Post {post_id} is not publishable. Current status: {status}")
 
         if not caption:
             raise PublishError(f"Post {post_id} has no caption.")
