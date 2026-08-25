@@ -45,6 +45,13 @@ class Settings(BaseSettings):
     instagram_access_token: SecretStr = SecretStr("")
     instagram_business_account_id: str = ""
 
+    # External media storage
+    gcs_bucket: str = Field(default="", validation_alias="GCS_BUCKET")
+    gcp_service_account_email: str = Field(
+        default="",
+        validation_alias="GCP_SERVICE_ACCOUNT_EMAIL",
+    )
+
     # Embeddings / generation
     embedding_model: str = "gemini-embedding-2"
     embedding_dimension: int = 768
