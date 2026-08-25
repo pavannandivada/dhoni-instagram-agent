@@ -4,6 +4,7 @@ import os
 import tempfile
 from datetime import timedelta
 from pathlib import Path
+from urllib.parse import unquote
 
 import google.auth
 import requests
@@ -40,7 +41,9 @@ def render_and_upload(
         storage_client = storage.Client()
 
         if source_url.startswith(f"https://storage.googleapis.com/{GCS_BUCKET}/"):
-            object_name = source_url.removeprefix(f"https://storage.googleapis.com/{GCS_BUCKET}/")
+            object_name = unquote(
+                source_url.removeprefix(f"https://storage.googleapis.com/{GCS_BUCKET}/")
+            )
 
             blob = storage_client.bucket(GCS_BUCKET).blob(object_name)
 
