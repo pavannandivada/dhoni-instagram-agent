@@ -226,7 +226,6 @@ def _draw_standard(image: Image.Image, text: str) -> None:
     draw = ImageDraw.Draw(image, "RGBA")
 
     # Editorial lower panel.
-    # panel_top = 760
     panel_top = int(image.height * 0.56)
     draw.rectangle(
         (0, panel_top, image.width, image.height),
@@ -388,12 +387,13 @@ def render_overlay(
     if mode not in {"QUOTE", "STANDARD", "MILESTONE"}:
         raise RenderError(f"Unsupported render mode: {mode}")
 
-    # Never overwrite an image that already contains meaningful text.
-    # Preserve the source image unchanged.
+    # Never add another overlay to an image that already contains
+    # meaningful text. However, still normalize its dimensions so
+    # the final image is valid for Instagram publishing.
     if detect_existing_text(str(source)):
         output.parent.mkdir(parents=True, exist_ok=True)
 
-        image = Image.open(source).convert("RGB")
+        image = _prepare_image(source).convert("RGB")
         image.save(
             output,
             format="JPEG",
