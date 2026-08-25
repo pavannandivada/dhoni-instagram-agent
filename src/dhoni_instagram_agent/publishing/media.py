@@ -49,9 +49,7 @@ def render_and_upload(
             try:
                 blob.download_to_filename(str(source_path))
             except Exception as error:
-                raise MediaRenderError(
-                    f"Unable to download GCS source image: {error}"
-                ) from error
+                raise MediaRenderError(f"Unable to download GCS source image: {error}") from error
         else:
             response = requests.get(source_url, timeout=30)
 
@@ -64,8 +62,7 @@ def render_and_upload(
 
             if not content_type.startswith("image/"):
                 raise MediaRenderError(
-                    f"Source URL did not return an image. "
-                    f"Content-Type: {content_type or 'unknown'}"
+                    f"Source URL did not return an image. Content-Type: {content_type or 'unknown'}"
                 )
 
             source_path.write_bytes(response.content)

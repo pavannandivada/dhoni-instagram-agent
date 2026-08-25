@@ -10,10 +10,7 @@ def test_database_url_percent_encodes_credentials() -> None:
         postgres_db="dhoni",
     )
 
-    assert (
-        settings.database_url
-        == "postgresql://agent%20user:p%40ss%20word@db.internal:6543/dhoni"
-    )
+    assert settings.database_url == "postgresql://agent%20user:p%40ss%20word@db.internal:6543/dhoni"
 
 
 def test_external_storage_configuration_is_loaded() -> None:
