@@ -1,0 +1,9 @@
+# Default owner for all repository changes.
+* @pavannandivada
+
+# Security-sensitive surfaces.
+/.github/ @pavannandivada
+/src/dhoni_instagram_agent/publishing/ @pavannandivada
+/src/dhoni_instagram_agent/api/ @pavannandivada
+/db/migrations/ @pavannandivada
+/Dockerfile @pavannandivada
