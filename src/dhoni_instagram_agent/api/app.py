@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from datetime import date, time
+from datetime import date, datetime, time
+from zoneinfo import ZoneInfo
 
 from fastapi import FastAPI, HTTPException
 
@@ -306,4 +307,63 @@ def publish_instagram_post(
         raise HTTPException(
             status_code=500,
             detail=f"Instagram publishing failed: {error}",
+        ) from error
+
+
+@app.post("/v1/instagram/publish-due")
+def publish_due_instagram_post() -> dict[str, object]:
+    try:
+        import psycopg
+
+        settings = Settings()
+        now = datetime.now(ZoneInfo("Asia/Kolkata"))
+        current_time = now.time().replace(microsecond=0)
+
+        with psycopg.connect(settings.database_url) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT post_id
+                    FROM content_calendar
+                    WHERE status = 'SCHEDULED'
+                      AND published = FALSE
+                      AND scheduled_date = %s
+                      AND scheduled_time <= %s
+                    ORDER BY scheduled_time, created_at
+                    LIMIT 1
+                    FOR UPDATE
+                    """,
+                    (
+                        now.date(),
+                        current_time,
+                    ),
+                )
+
+                row = cursor.fetchone()
+
+                if row is None:
+                    return {
+                        "status": "NO_DUE_POST",
+                        "date": str(now.date()),
+                        "time": str(current_time),
+                    }
+
+                post_id = row[0]
+
+            return publish_post(
+                connection,
+                post_id,
+                dry_run=False,
+            )
+
+    except ValueError as error:
+        raise HTTPException(
+            status_code=400,
+            detail=str(error),
+        ) from error
+
+    except Exception as error:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Scheduled publishing failed: {error}",
         ) from error
