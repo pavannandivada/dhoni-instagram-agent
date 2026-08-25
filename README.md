@@ -4,7 +4,7 @@ A self-hosted, production-oriented agentic AI platform for an MS Dhoni fan accou
 
 The project ingests structured knowledge, generates embeddings, performs semantic retrieval, creates grounded Instagram captions from verified evidence, and routes LLM requests across multiple providers with a local Ollama fallback.
 
-> **Project status:** Phase 3 — grounded generation, verification gates, multi-provider LLM routing, and Content Calendar foundations.
+> **Project status:** Phase 3 — grounded generation, verification gates, multi-provider LLM routing, Content Calendar, protected media rendering, and Instagram publishing foundations.
 
 ## Current capabilities
 
@@ -22,6 +22,8 @@ The project ingests structured knowledge, generates embeddings, performs semanti
 - Deterministic caption sanity checks.
 - Human-review-first publishing flow.
 - Content Calendar CRUD API with `PENDING_REVIEW` and `APPROVED` states.
+- Protected media rendering that preserves existing text/quotes on source images.
+- Authenticated access to private GCS source images during rendering.
 - Standalone critic endpoint for future experiments and provider-specific evaluation.
 - Separate test database for integration tests.
 - Audit events for ingestion operations.
@@ -64,7 +66,8 @@ flowchart TD
     Writer --> Sanity[Deterministic caption checks]
     Sanity --> HITL[Human approval]
     HITL --> Calendar[Content Calendar]
-    Calendar --> Meta[Instagram / Meta API]
+    Calendar --> Asset[Protected media rendering]
+    Asset --> Meta[Instagram / Meta API]
     Meta --> Audit[Audit trail]
 
     OptionalCritic[Optional standalone critic] -.-> Writer
@@ -124,7 +127,37 @@ PENDING_REVIEW
 Human approval
     ↓
 APPROVED
+    ↓
+Protected media rendering
+    ↓
+Scheduled Instagram publishing
+    ↓
+Audit result
 ```
+
+## Publishing and scheduling
+
+The publishing path is designed around a human-approved Content Calendar rather than direct LLM-to-Instagram publishing.
+
+```text
+Content generated
+    ↓
+PENDING_REVIEW
+    ↓
+Human approval
+    ↓
+APPROVED
+    ↓
+Asset selection / protected rendering
+    ↓
+Scheduled publishing workflow
+    ↓
+Instagram / Meta API
+    ↓
+Audit + idempotency result
+```
+
+The production workflow is intended to publish **one approved post per day at 6:00 PM IST**, with scheduling controlled outside the LLM. The scheduler should only select eligible `APPROVED` content and must not bypass approval, validation, licensing, or idempotency safeguards.
 
 ## LLM routing
 
@@ -264,10 +297,10 @@ Validated knowledge ingestion and persistence.
 Embeddings, pgvector indexing, and semantic retrieval.
 
 ### Phase 3
-Grounded generation, verification gate, multi-provider LLM routing, and Content Calendar foundation.
+Grounded generation, verification gate, multi-provider LLM routing, Content Calendar, protected media rendering, and publishing foundations.
 
 ### Next
-n8n Content Calendar automation, human approval workflow, asset selection, scheduling, and Instagram publishing.
+Production hardening of the scheduled Instagram publishing workflow, operational monitoring, richer content scheduling, and ongoing evaluation.
 
 ## Security
 
