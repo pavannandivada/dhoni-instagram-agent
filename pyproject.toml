@@ -21,7 +21,7 @@ dependencies = [
   "pytesseract>=0.3.13,<1",
   "requests>=2.32,<3",
   "uvicorn[standard]>=0.35,<1",
-  "google-cloud-storage>=2.18,<3",
+  "google-cloud-storage>=2.18,<4",
 ]
 [project.scripts]
 dhoni-migrate = "dhoni_instagram_agent.migrate:main"
