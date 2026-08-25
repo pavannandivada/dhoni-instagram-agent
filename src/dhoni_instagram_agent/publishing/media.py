@@ -7,8 +7,10 @@ from urllib.parse import unquote
 
 import google.auth
 import requests
-from google.auth import iam
-from google.auth.transport import requests as google_requests
+
+# from google.auth import iam
+# from google.auth.transport import requests as google_requests
+from google.auth import impersonated_credentials
 from google.cloud import storage  # type: ignore[import-untyped]
 
 from dhoni_instagram_agent.config import Settings
@@ -99,15 +101,13 @@ def _generate_signed_url(
     blob: storage.Blob,
     service_account_email: str,
 ) -> str:
-    credentials, _ = google.auth.default()
+    source_credentials, _ = google.auth.default()
 
-    request = google_requests.Request()
-    credentials.refresh(request)  # type: ignore[no-untyped-call]
-
-    signer = iam.Signer(  # type: ignore[no-untyped-call]
-        request,
-        credentials,
-        service_account_email,
+    signing_credentials = impersonated_credentials.Credentials(  # type: ignore[no-untyped-call]
+        source_credentials=source_credentials,
+        target_principal=service_account_email,
+        target_scopes=["https://www.googleapis.com/auth/cloud-platform"],
+        lifetime=300,
     )
 
     return str(
@@ -115,7 +115,7 @@ def _generate_signed_url(
             version="v4",
             expiration=timedelta(hours=1),
             method="GET",
-            credentials=signer,
+            credentials=signing_credentials,
             service_account_email=service_account_email,
         )
     )
